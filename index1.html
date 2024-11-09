@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寝室成员签到</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        #dormitory-select {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        #member-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            max-width: 800px;
+        }
+        .member-card {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            width: 150px;
+            text-align: center;
+        }
+        .member-card h2 {
+            margin: 10px 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .status-select {
+            margin-top: 10px;
+            padding: 8px;
+            width: 100%;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>寝室成员签到</h1>
+    <select id="dormitory-select" onchange="showDormitoryMembers()">
+        <option value="">请选择寝室</option>
+        <option value="101">101</option>
+        <option value="102">102</option>
+        <option value="103">103</option>
+    </select>
+
+    <div id="member-list"></div>
+
+    <button onclick="submitAttendance()">提交签到</button>
+
+    <!-- 注意脚本引入的顺序 -->
+    <script src="init.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

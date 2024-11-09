@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寝室成员签到</title>
+    <script src="server.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        #dormitory-select {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        #member-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            max-width: 800px;
+        }
+        .member-card {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            width: 150px;
+            text-align: center;
+        }
+        .member-card h2 {
+            margin: 10px 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .status-select {
+            margin-top: 10px;
+            padding: 8px;
+            width: 100%;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>寝室成员签到</h1>
+    <select id="dormitory-select" onchange="showDormitoryMembers()">
+        <option value="">请选择寝室</option>
+    </select>
+
+    
+        <script>
+            // 假设您已经有数据库连接对象 db
+    
+            // 获取所有寝室号（dormitory_number）列表
+            async function getDormitories() {
+                const dormitories = [];
+                return new Promise((resolve, reject) => {
+                    db.transaction(function(tx) {
+                        tx.executeSql('SELECT DISTINCT dormitory_number FROM members', [], function(tx, results) {
+                            for (let i = 0; i < results.rows.length; i++) {
+                                let dorm = results.rows.item(i);
+                                dormitories.push(dorm.dormitory_number);
+                            }
+                            resolve(dormitories);
+                        }, function(error) {
+                            console.error("Database error:", error);
+                            reject(error);
+                        });
+                    });
+                });
+            }
+    
+            // 加载寝室号到选择框
+            async function loadDormitories() {
+                try {
+                    const dormitories = await getDormitories();
+                    const select = document.getElementById('dormitory-select');
+    
+                    dormitories.forEach(dormNumber => {
+                        const option = document.createElement('option');
+                        option.value = dormNumber;
+                        option.textContent = dormNumber;
+                        select.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error("Error loading dormitories:", error);
+                }
+            }
+    
+            // 根据选择的寝室号显示成员
+            function showDormitoryMembers() {
+                const dormitoryNumber = document.getElementById("dormitory-select").value;
+                const memberList = document.getElementById("member-list");
+                memberList.innerHTML = ""; // 清空之前的成员列表
+    
+                if (!dormitoryNumber) return; // 如果没有选择寝室号，则返回
+    
+                // 查询选定寝室号的成员
+                db.transaction(function(tx) {
+                    tx.executeSql('SELECT member_name FROM members WHERE dormitory_number = ?', [dormitoryNumber], function(tx, results) {
+                        for (let i = 0; i < results.rows.length; i++) {
+                            let member = results.rows.item(i);
+                            const listItem = document.createElement('li');
+                            listItem.textContent = member.member_name;
+                            memberList.appendChild(listItem);
+                        }
+                    }, function(error) {
+                        console.error("Database error:", error);
+                    });
+                });
+            }
+    
+            // 页面加载时自动加载寝室号
+            document.addEventListener("DOMContentLoaded", loadDormitories);
+        </script>
+
+    <div id="member-list"></div>
+
+    <button onclick="submitAttendance()">提交签到</button>
+
+    <script src="script.js"></script>
+</body>
+</html>

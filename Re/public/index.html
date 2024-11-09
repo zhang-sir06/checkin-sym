@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寝室成员签到</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #dormitory-select {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            min-width: 200px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        #member-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+        }
+        .member-card {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+        .member-card h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .member-card .class-name {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .status-select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .submit-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .submit-button:hover {
+            background-color: #45a049;
+        }
+        .submit-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #history-table {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 1200px;
+            border-collapse: collapse;
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #history-table th,
+        #history-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        #history-table th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: 500;
+        }
+        #history-table tr:nth-child(even) {
+            background-color: #f8f8f8;
+        }
+        .status-on-time {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .status-absent {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .status-leave {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+            color: #666;
+            font-size: 16px;
+        }
+        .error-message {
+            color: #f44336;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #ffebee;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            #member-list {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+            .member-card {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>寝室成员签到</h1>
+    <select id="dormitory-select">
+        <option value="">请选择寝室</option>
+    </select>
+
+    <div id="loading" class="loading">加载中...</div>
+    <div id="error-message" class="error-message"></div>
+    
+    <div id="member-list"></div>
+    <button onclick="submitAttendance()" id="submit-btn" class="submit-button" style="display: none;">提交签到</button>
+
+    <table id="history-table">
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>时间</th>
+                <th>寝室</th>
+                <th>姓名</th>
+                <th>班级</th>
+                <th>状态</th>
+            </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+    </table>
+
+    <script>
+        const attendanceStatus = {};
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+        const submitBtn = document.getElementById('submit-btn');
+
+        function showLoading() {
+            loading.style.display = 'block';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        async function loadDormitories() {
+            showLoading();
+            hideError();
+            try {
+                const response = await fetch('/api/dormitories');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                const select = document.getElementById('dormitory-select');
+                
+                // 清空现有选项
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                data.forEach(dorm => {
+                    const option = document.createElement('option');
+                    option.value = dorm.dormitory_number;
+                    option.textContent = dorm.dormitory_number;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('获取寝室列表失败:', error);
+                showError('获取寝室列表失败，请刷新页面重试');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function showDormitoryMembers() {
+            const dormitorySelect = document.getElementById('dormitory-select');
+            const selectedDormitory = dormitorySelect.value;
+            const memberListDiv = document.getElementById('member-list');
+            
+            memberListDiv.innerHTML = '';
+            submitBtn.style.display = 'none';
+            hideError();
+            
+            if (!selectedDormitory) return;
+
+            showLoading();
+            try {
+                const response = await fetch(`/api/members/${encodeURIComponent(selectedDormitory)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const members = await response.json();
+                
+                if (members.length === 0) {
+                    showError('该寝室暂无成员信息');
+                    return;
+                }
+
+                members.forEach(member => {
+                    const memberCard = document.createElement('div');
+                    memberCard.classList.add('member-card');
+
+                    memberCard.innerHTML = `
+                        <h2>${member.member_name}</h2>
+                        <div class="class-name">${member.class_name}</div>
+                        <select class="status-select" onchange="updateStatus(${member.id}, this.value)">
+                            <option value="on-time">正常</option>
+                            <option value="absent">未到</option>
+                            <option value="leave">请假</option>
+                        </select>
+                    `;
+
+                    memberListDiv.appendChild(memberCard);
+                    attendanceStatus[member.id] = 'on-time';
+                });
+
+                submitBtn.style.display = 'block';
+            } catch (error) {
+                console.error('获取成员列表失败:', error);
+                showError('获取成员列表失败，请重试');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function updateStatus(memberId, status) {
+            attendanceStatus[memberId] = status;
+        }
+
+        async function submitAttendance() {
+            const selectedDormitory = document.getElementById('dormitory-select').value;
+            
+            if (!selectedDormitory) {
+                showError('请先选择寝室！');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            showLoading();
+            hideError();
+
+            const currentDate = new Date().toISOString().slice(0, 10);
+            const currentTime = new Date().toTimeString().slice(0, 8);
+
+            try {
+                const response = await fetch('/api/attendance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        dormitory: selectedDormitory,
+                        records: attendanceStatus,
+                        date: currentDate,
+                        time: currentTime
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('签到提交成功！');
+                    loadAttendanceHistory();
+                } else {
+                    throw new Error(result.error || '提交失败');
+                }
+            } catch (error) {
+                console.error('提交签到失败:', error);
+                showError('提交签到失败，请重试');
+            } finally {
+                submitBtn.disabled = false;
+                hideLoading();
+            }
+        }
+
+        async function loadAttendanceHistory() {
+            showLoading();
+            try {
+                const response = await fetch('/api/attendance/history');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const records = await response.json();
+                
+                const historyBody = document.getElementById('history-body');
+                historyBody.innerHTML = '';
+                
+                records.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.date}</td>
+                        <td>${record.time}</td>
+                        <td>${record.dormitory_number}</td>
+                        <td>${record.member_name}</td>
+                        <td>${record.class_name}</td>
+                        <td class="status-${record.status}">${getStatusText(record.status)}</td>
+                    `;
+                    historyBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('获取历史记录失败:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'on-time': '正常',
+                'absent': '未到',
+                'leave': '请假'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDormitories();
+            document.getElementById('dormitory-select').addEventListener('change', showDormitoryMembers);
+            loadAttendanceHistory();
+        });
+    </script>
+</body>
+</html>
