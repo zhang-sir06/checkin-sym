@@ -1,3 +1,12 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * 本源代码形式受 Mozilla 公共许可证 2.0 版本的约束。
+ * 如果本文件未随附该许可证的副本，您可以在以下网址获取：
+ * http://mozilla.org/MPL/2.0/。
+ */
+
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const { exec } = require('child_process');
