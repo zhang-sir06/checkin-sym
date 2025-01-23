@@ -1,3 +1,11 @@
+## License
+
+This project is licensed under the Mozilla Public License 2.0. 
+
+### 关于许可证的中文说明
+本项目遵循 Mozilla 公共许可证 2.0 版本（MPL 2.0）。  
+请注意，英文版本是唯一具有法律效力的版本，中文翻译仅用于帮助理解其内容。您可以通过 [http://mozilla.org/MPL/2.0/](http://mozilla.org/MPL/2.0/) 获取正式英文版本。
+
 # 目前稳定版:v1.5.0
 
 # 预开发版v1.5.1(整体美化)
