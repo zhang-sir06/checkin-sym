@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<!--
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+本源代码形式受 Mozilla 公共许可证 2.0 版本的约束。
+如果本文件未随附该许可证的副本，您可以在以下网址获取：
+http://mozilla.org/MPL/2.0/。
+-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="./icon/favicon-16x16.ico" sizes="16x16" type="image/x-icon">
+    <link rel="icon" href="./icon/favicon-32x32.ico" sizes="32x32" type="image/x-icon">
+    <link rel="icon" href="./icon/favicon-64x64.ico" sizes="64x64" type="image/x-icon">
+    <title>寝室成员签到</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #dormitory-select {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            min-width: 200px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        #member-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+        }
+        .member-card {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+        .member-card h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .member-card .class-name {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .status-select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .submit-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #7bcfd6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .submit-button:hover {
+            background-color: #7bcfd6;
+        }
+        .submit-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #history-table {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 1200px;
+            border-collapse: collapse;
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #history-table th,
+        #history-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        #history-table th {
+            background-color: #7bcfd6;
+            color: white;
+            font-weight: 500;
+        }
+        #history-table tr:nth-child(even) {
+            background-color: #f8f8f8;
+        }
+        .status-on-time {
+            color: #7bcfd6;
+            font-weight: bold;
+        }
+        .status-absent {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .status-leave {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+            color: #666;
+            font-size: 16px;
+        }
+        .error-message {
+            color: #f44336;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #ffebee;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            #member-list {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+            .member-card {
+                width: auto;
+            }
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 1200px;
+            justify-content: center;
+        }
+        .tab {
+            padding: 10px 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            background-color: #7bcfd6;
+            color: white;
+            border-color: #7bcfd6;
+        }
+        .history-section {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 20px;
+        }
+        .history-section.active {
+            display: block;
+        }
+        .attendance-section {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .attendance-section.active {
+            display: block;
+        }
+        #history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #history-table th {
+            background-color: #7bcfd6;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        #history-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        #history-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .history-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .history-controls select, .history-controls input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .refresh-button {
+            padding: 8px 16px;
+            background-color: #7bcfd6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .refresh-button:hover {
+            background-color: #7bcfd6;
+        }
+        .status-count {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .count-item {
+            margin: 5px 0;
+            color: #666;
+        }
+        .action-buttons {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .delete-button {
+            padding: 8px 16px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none; /* 默认隐藏 */
+        }
+        
+        .delete-button:hover {
+            background-color: #d32f2f;
+        }
+        
+        .delete-button.visible {
+            display: inline-block;
+        }
+        
+        .checkbox-column {
+            width: 30px;
+            text-align: center;
+        }
+        
+        .select-all-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .custom-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .history-table-container {
+            position: relative;
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .history-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .history-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .history-controls > * {
+                width: 100%;
+            }
+        }
+        .pagination {
+          margin-top: 20px;
+          text-align: center;
+        }
+        
+        .page-btn {
+          padding: 5px 15px;
+          margin: 0 10px;
+          border: 1px solid #ddd;
+          background-color: #fff;
+          cursor: pointer;
+        }
+        
+        .page-btn:disabled {
+          background-color: #f5f5f5;
+          cursor: not-allowed;
+        }
+        
+        #page-info {
+          margin: 0 15px;
+        }
+
+        .building-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .building-tab {
+            padding: 12px 24px;
+            background-color: #fff;
+            border: 2px solid #7bcfd6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            color: #57c3c2;
+            font-size: 15px;
+        }
+
+        .building-tab.active {
+            background-color: #7bcfd6;
+            color: white;
+        }
+
+        #dorm-buttons-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 20px;
+        }
+
+        .dorm-button {
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .dorm-button:hover {
+            background-color: #f5f5f5;
+            transform: translateY(-2px);
+        }
+
+        .dorm-button.active {
+            background-color: #7bcfd6;
+            color: white;
+            border-color: #7bcfd6;
+            box-shadow: 0 2px 6px rgba(87, 195, 194, 0.3);
+        }
+
+    </style>
+</head>
+
+<body>
+    <h1>寝室成员签到系统</h1>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('attendance')">签到</div>
+        <div class="tab" onclick="switchTab('history')">历史记录</div>
+        <div class="tab" onclick="switchTab('export')">导出记录</div>
+        <div class="tab" onclick="switchTab('generate')">生成Word文件</div>
+    </div>
+
+    <!-- 签到部分 -->
+    <div id="attendance-section" class="attendance-section active">
+        <!-- 新增楼栋标签和寝室按钮容器 -->
+        <div class="building-tabs">
+            <div class="building-tab active" data-building="27" onclick="switchBuilding(27)">27号楼</div>
+            <div class="building-tab" data-building="28" onclick="switchBuilding(28)">28号楼</div>
+            <div class="building-tab" data-building="29" onclick="switchBuilding(29)">29号楼</div>
+        </div>
+        
+        <div id="dorm-buttons-container">
+            <!-- 动态生成的寝室按钮 -->
+        </div>
+
+        <div id="loading" class="loading">加载中...</div>
+        <div id="error-message" class="error-message"></div>
+
+        <div id="member-list"></div>
+        <button onclick="submitAttendance()" id="submit-btn" class="submit-button" style="display: none;">提交全部签到数据</button>
+    </div>
+
+    <!-- 历史记录部分 -->
+    <div id="history-section" class="history-section">
+        <div class="history-controls">
+            <select id="history-dormitory-filter">
+                <option value="">所有寝室</option>
+            </select>
+            <select id="history-status-filter">
+                <option value="">所有状态</option>
+                <option value="on-time">正常</option>
+                <option value="absent">未到</option>
+                <option value="leave">请假</option>
+            </select>
+            <input type="date" id="history-date-filter">
+            <button onclick="loadAttendanceHistory()" class="refresh-button">刷新</button>
+        </div>
+
+
+        <div class="status-count">
+            <div class="count-item">总人数：<span id="total-count">0</span></div>
+            <div class="count-item">正常：<span id="on-time-count">0</span></div>
+            <div class="count-item">未到：<span id="absent-count">0</span></div>
+            <div class="count-item">请假：<span id="leave-count">0</span></div>
+        </div>
+
+        <div class="action-buttons">
+            <div class="select-all-container">
+                <input type="checkbox" id="select-all" class="custom-checkbox" onchange="toggleSelectAll()">
+                <label for="select-all">全选</label>
+            </div>
+            <button id="delete-button" class="delete-button" onclick="deleteSelected()">删除选中</button>
+        </div>
+
+        <div class="history-table-container">
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th class="checkbox-column"></th>
+                        <th>日期</th>
+                        <th>时间</th>
+                        <th>寝室</th>
+                        <th>姓名</th>
+                        <th>班级</th>
+                        <th>教师</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body"></tbody>
+            </table>
+        </div>
+        <!-- 分页控制 -->
+        <div class="pagination-controls">
+          <div class="pagination">
+            <button id="prev-page" class="page-btn">上一页</button>
+            <span id="page-info">第 1 页 / 共 1 页</span>
+            <button id="next-page" class="page-btn">下一页</button>
+          </div>
+        </div>
+    </div>
+
+    <!-- 导出记录部分 -->
+    <div id="export-section" class="history-section">
+        <div class="history-controls">
+            <select id="export-dormitory-filter">
+                <option value="">所有寝室</option>
+            </select>
+            <input type="date" id="export-date-filter">
+            <div>
+                <label><input type="checkbox" checked value="absent" name="export-status-filter"> 未到</label>
+                <label><input type="checkbox" checked value="leave" name="export-status-filter"> 请假</label>
+            </div>
+            <button onclick="exportRecords()" class="submit-button">导出</button>
+        </div>
+    </div>
+
+
+    <script>
+        const attendanceStatus = {};
+        let currentPage = 1;
+        let totalPages = 1;
+        let allDorms = []; // 存储所有寝室数据
+        let currentBuilding = 27; // 当前选中的楼栋，默认是27号楼
+        const pageSize = 50;
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+        const submitBtn = document.getElementById('submit-btn');
+
+        function showLoading() {
+            loading.style.display = 'block';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        async function initializeBuildings() {
+            showLoading();
+            try {
+                // 获取所有寝室数据
+                const response = await fetch('/api/dormitories');
+                if (!response.ok) throw new Error('获取寝室列表失败');
+                allDorms = await response.json();
+                
+                // 初始化楼栋标签
+                switchBuilding(27); // 默认显示27号楼
+            } catch (error) {
+                console.error('初始化失败:', error);
+                showError('初始化失败，请刷新页面重试');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function switchBuilding(building) {
+            // 更新当前选中的楼栋
+            currentBuilding = building;
+            
+            // 更新楼栋标签的激活状态
+            document.querySelectorAll('.building-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.building == building);
+            });
+            
+            // 更新寝室按钮
+            updateDormButtons();
+        }
+
+        function updateDormButtons() {
+            const container = document.getElementById('dorm-buttons-container');
+            container.innerHTML = ''; // 清空现有按钮
+            
+            // 过滤当前楼栋的寝室
+            const currentDorms = allDorms.filter(dorm => {
+                const [building] = dorm.dormitory_number.split('#');
+                return building == currentBuilding;
+            });
+            
+            // 生成寝室按钮
+            currentDorms.forEach(dorm => {
+                const button = document.createElement('div');
+                button.className = 'dorm-button';
+                button.textContent = dorm.dormitory_number.split('#')[1]; // 只显示房间号
+                button.title = dorm.dormitory_number; // 保存完整寝室号
+                button.onclick = () => selectDormitory(dorm.dormitory_number); // 点击时选择寝室
+                container.appendChild(button);
+            });
+        }
+
+        async function selectDormitory(dormNumber) {
+            // 移除所有寝室按钮的激活状态
+            document.querySelectorAll('.dorm-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 设置当前激活的寝室按钮
+            const activeButton = [...document.querySelectorAll('.dorm-button')]
+                .find(btn => btn.title === dormNumber);
+            if (activeButton) activeButton.classList.add('active');
+            
+            // 加载对应寝室的人员列表
+            await loadMembers(dormNumber);
+        }
+
+        async function loadDormitories() {
+            showLoading();
+            hideError();
+            try {
+                const response = await fetch('/api/dormitories');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                const select = document.getElementById('dormitory-select');
+                
+                // 清空现有选项
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                data.forEach(dorm => {
+                    const option = document.createElement('option');
+                    option.value = dorm.dormitory_number;
+                    option.textContent = dorm.dormitory_number;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('获取寝室列表失败:', error);
+                showError('获取寝室列表失败，请刷新页面重试');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function loadMembers(dormNumber) {
+            const memberListDiv = document.getElementById('member-list');
+            memberListDiv.innerHTML = ''; // 清空现有成员列表
+            submitBtn.style.display = 'none'; // 隐藏提交按钮
+            
+            showLoading();
+            try {
+                // 获取寝室成员数据
+                const response = await fetch(`/api/members/${encodeURIComponent(dormNumber)}`);
+                if (!response.ok) throw new Error('获取成员列表失败');
+                const members = await response.json();
+                
+                if (members.length === 0) {
+                    showError('该寝室暂无成员信息');
+                    return;
+                }
+                
+                // 生成成员卡片
+                members.forEach(member => {
+                    const memberCard = document.createElement('div');
+                    memberCard.classList.add('member-card');
+                    memberCard.innerHTML = `
+                        <h2>${member.member_name}</h2>
+                        <div class="class-name">${member.class_name}</div>
+                        <select class="status-select" onchange="updateStatus(${member.id}, this.value)">
+                            <option value="on-time">正常</option>
+                            <option value="absent">未到</option>
+                            <option value="leave">请假</option>
+                        </select>
+                    `;
+                    memberListDiv.appendChild(memberCard);
+                    attendanceStatus[member.id] = 'on-time'; // 初始化状态
+                });
+                
+                submitBtn.style.display = 'block'; // 显示提交按钮
+            } catch (error) {
+                console.error('获取成员列表失败:', error);
+                showError('获取成员列表失败，请重试');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function updateStatus(memberId, status) {
+            attendanceStatus[memberId] = status;
+        }
+
+        async function submitAttendance() {
+            const selectedDormitory = document.getElementById('dormitory-select').value;
+            
+            if (!selectedDormitory) {
+                showError('请先选择寝室！');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            showLoading();
+            hideError();
+
+            const currentDate = new Date().toISOString().slice(0, 10);
+            const currentTime = new Date().toTimeString().slice(0, 8);
+
+            try {
+                const response = await fetch('/api/attendance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        dormitory: selectedDormitory,
+                        records: attendanceStatus,
+                        date: currentDate,
+                        time: currentTime
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('签到提交成功！');
+                    loadAttendanceHistory();
+                } else {
+                    throw new Error(result.error || '提交失败');
+                }
+            } catch (error) {
+                console.error('提交签到失败:', error);
+                showError('提交签到失败，请重试');
+            } finally {
+                submitBtn.disabled = false;
+                hideLoading();
+            }
+        }
+
+        async function loadAttendanceHistory(page = 1) {
+            showLoading();
+            try {
+                const dormitoryFilter = document.getElementById('history-dormitory-filter').value;
+                const statusFilter = document.getElementById('history-status-filter').value;
+                const dateFilter = document.getElementById('history-date-filter').value;
+                //打印日志
+                console.log(`/api/attendance/history?page=${page}&pageSize=${pageSize}`);
+                //
+
+                const response = await fetch(`/api/attendance/history?page=${page}&pageSize=${pageSize}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                // 打印返回的历史记录数据
+                console.log('收到的历史记录数据:', data);
+
+                // 检查是否有记录返回
+                if (!data.records || data.records.length === 0) {
+                    console.log('没有历史记录');
+                    showError('没有找到历史记录');
+                    return;
+                }
+                // 更新分页信息
+                currentPage = data.currentPage;
+                totalPages = data.totalPages;
+                updatePaginationControls();
+
+                // 应用过滤器
+                let records = data.records;
+                if (dormitoryFilter) {
+                    records = records.filter(r => r.dormitory_number === dormitoryFilter);
+                }
+                if (statusFilter) {
+                    records = records.filter(r => r.status === statusFilter);
+                }
+                if (dateFilter) {
+                    records = records.filter(r => r.date === dateFilter);
+                }
+
+                // 更新统计信息
+                updateStatistics(records);
+                // 更新表格和统计
+                updateHistoryTable(records);
+                updateStatusCounts(records);
+
+                // 清空选择
+                selectedRecords.clear();
+                updateDeleteButton();
+
+                const historyBody = document.getElementById('history-body');
+                historyBody.innerHTML = '';
+                
+                records.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="checkbox-column">
+                            <input type="checkbox" class="record-checkbox custom-checkbox" 
+                                   value="${record.id}" 
+                                   onchange="handleCheckboxChange(this)">
+                        </td>
+                        <td>${record.date}</td>
+                        <td>${record.time}</td>
+                        <td>${record.dormitory_number}</td>
+                        <td>${record.member_name}</td>
+                        <td>${record.class_name}</td>
+                        <td>${record.teacher_name}</td>
+                        <td class="status-${record.status}">${getStatusText(record.status)}</td>
+                    `;
+                    historyBody.appendChild(row);
+                });
+
+                // 重置全选框
+                document.getElementById('select-all').checked = false;
+            } catch (error) {
+                console.error('获取历史记录失败:', error);
+                showError('获取历史记录失败，请重试');
+            } finally {
+                hideLoading();
+            }
+            console.log('接收到的历史记录数据:', data.records);
+        }
+        function updatePaginationControls() {
+            const prevButton = document.getElementById('prev-page');
+            const nextButton = document.getElementById('next-page');
+            const pageInfo = document.getElementById('page-info');
+
+            prevButton.disabled = currentPage <= 1;
+            nextButton.disabled = currentPage >= totalPages;
+
+            pageInfo.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+        }
+        function updateHistoryTable(records) {
+            const historyBody = document.getElementById('history-body');
+            historyBody.innerHTML = '';
+
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="checkbox-column">
+                        <input type="checkbox" class="record-checkbox custom-checkbox" 
+                               value="${record.id}" 
+                               onchange="handleCheckboxChange(this)">
+                    </td>
+                    <td>${record.date}</td>
+                    <td>${record.time}</td>
+                    <td>${record.dormitory_number}</td>
+                    <td>${record.member_name}</td>
+                    <td>${record.class_name}</td>
+                    <td>${record.teacher_name}</td>
+                    <td class="status-${record.status}">${getStatusText(record.status)}</td>
+                `;
+                historyBody.appendChild(row);
+            });
+
+            // 重置全选框
+            document.getElementById('select-all').checked = false;
+        }
+        // 
+        function updateStatistics(records) {
+            const totalCount = records.length;
+            const onTimeCount = records.filter(r => r.status === 'on-time').length;
+            const absentCount = records.filter(r => r.status === 'absent').length;
+            const leaveCount = records.filter(r => r.status === 'leave').length;
+    
+            document.getElementById('total-count').textContent = totalCount;
+            document.getElementById('on-time-count').textContent = onTimeCount;
+            document.getElementById('absent-count').textContent = absentCount;
+            document.getElementById('leave-count').textContent = leaveCount;
+        }
+
+
+
+        function updateStatusCounts(records) {
+            const totalCount = records.length;
+            const onTimeCount = records.filter(r => r.status === 'on-time').length;
+            const absentCount = records.filter(r => r.status === 'absent').length;
+            const leaveCount = records.filter(r => r.status === 'leave').length;
+
+            document.getElementById('total-count').textContent = totalCount;
+            document.getElementById('on-time-count').textContent = onTimeCount;
+            document.getElementById('absent-count').textContent = absentCount;
+            document.getElementById('leave-count').textContent = leaveCount;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'on-time': '正常',
+                'absent': '未到',
+                'leave': '请假'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 更新后的页面初始化（只保留一个DOMContentLoaded监听）
+        document.addEventListener('DOMContentLoaded', () => {
+            // 新功能初始化
+            initializeBuildings(); // 初始化楼栋标签和寝室按钮（替代原来的loadDormitories）
+
+            // 历史记录相关初始化
+            initializeHistoryFilters(); // 初始化历史记录的下拉菜单
+            loadAttendanceHistory();    // 加载历史记录数据
+            
+            // 分页功能初始化
+            document.getElementById('prev-page')?.addEventListener('click', () => {
+                if (currentPage > 1) loadAttendanceHistory(currentPage - 1);
+            });
+            document.getElementById('next-page')?.addEventListener('click', () => {
+                if (currentPage < totalPages) loadAttendanceHistory(currentPage + 1);
+            });
+
+            // 历史记录刷新按钮（注意修改事件委托逻辑）
+            document.querySelector('.history-controls')?.addEventListener('click', (e) => {
+                if (e.target.classList.contains('refresh-button')) { // 更可靠的判断方式
+                    loadAttendanceHistory(currentPage);
+                }
+            });
+        });
+
+        // 初始化历史记录过滤器（保持原有逻辑但需要微调）
+        async function initializeHistoryFilters() {
+            try {
+                const response = await fetch('/api/dormitories');
+                if (!response.ok) throw new Error('获取寝室列表失败');
+                const dorms = await response.json();
+                
+                const historyFilter = document.getElementById('history-dormitory-filter');
+                // 清空原有选项（保留"所有寝室"选项）
+                while (historyFilter.options.length > 1) {
+                    historyFilter.remove(1);
+                }
+                
+                // 添加新选项
+                dorms.forEach(dorm => {
+                    const option = new Option(dorm.dormitory_number, dorm.dormitory_number);
+                    historyFilter.add(option);
+                });
+            } catch (error) {
+                console.error('初始化历史过滤器失败:', error);
+            }
+        }
+
+        let selectedRecords = new Set();
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('select-all');
+            const checkboxes = document.querySelectorAll('.record-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+                handleCheckboxChange(checkbox);
+            });
+        }
+
+        function handleCheckboxChange(checkbox) {
+            const recordId = checkbox.value;
+            if (checkbox.checked) {
+                selectedRecords.add(recordId);
+            } else {
+                selectedRecords.delete(recordId);
+            }
+            updateDeleteButton();
+        }
+
+        function updateDeleteButton() {
+            const deleteButton = document.getElementById('delete-button');
+            deleteButton.classList.toggle('visible', selectedRecords.size > 0);
+        }
+
+        async function deleteSelected() {
+            if (selectedRecords.size === 0) return;
+
+            if (!confirm(`确定要删除选中的 ${selectedRecords.size} 条记录吗？`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/attendance/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ids: Array.from(selectedRecords)
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('删除失败');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    selectedRecords.clear();
+                    loadAttendanceHistory();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('删除记录失败:', error);
+                alert('删除记录失败，请重试');
+            }
+        }
+
+        function switchTab(tabName) {
+            // 更新标签样式
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            // 根据标签名称执行不同的操作
+            switch (tabName) {
+
+            case 'attendance':
+                // 切换到签到页面
+                document.querySelectorAll('.attendance-section, .history-section, #export-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById('attendance-section').classList.add('active');
+                break;
+
+            case 'history':
+                // 切换到历史记录页面
+                document.querySelectorAll('.attendance-section, .history-section, #export-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById('history-section').classList.add('active');
+                loadAttendanceHistory();
+                break;
+
+            case 'export':
+                // 切换到导出记录页面
+                document.querySelectorAll('.attendance-section, .history-section, #export-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById('export-section').classList.add('active');
+                initializeExportFilters();
+                break;
+
+            case 'generate':
+                // 生成Word文件，不切换页面内容
+                generateWord();
+                break;
+
+            default:
+                // 处理其他情况，比如无效的 tabName
+                console.warn(`Invalid tabName: ${tabName}`);
+            }
+        }
+        
+        function initializeExportFilters() {
+            try {
+                const response = fetch('/api/dormitories');
+                if (!response.ok) throw new Error('Failed to fetch dormitories');
+                const data = response.json();
+                
+                const exportDormitoryFilter = document.getElementById('export-dormitory-filter');
+                data.forEach(dorm => {
+                    const option = document.createElement('option');
+                    option.value = dorm.dormitory_number;
+                    option.textContent = dorm.dormitory_number;
+                    exportDormitoryFilter.appendChild(option);
+                });
+            } catch (error) {
+                console.error('初始化导出过滤器失败:', error);
+            }
+        }
+        async function exportRecords() {
+            const dormitoryFilter = document.getElementById('export-dormitory-filter').value;
+            const statusCheckboxes = document.querySelectorAll('input[name="export-status-filter"]:checked');
+            const dateFilter = document.getElementById('export-date-filter').value;
+
+            if (!dateFilter) {
+                showError('请选择日期！');
+                return;
+            }
+
+            // 获取选中的状态值
+            const selectedStatus = Array.from(statusCheckboxes).map(checkbox => checkbox.value);
+            if (selectedStatus.length === 0) {
+                showError('请选择至少一个状态！');
+                return;
+            }
+
+            // 将状态数组转换为逗号分隔的字符串
+            const statusQuery = selectedStatus.join(',');
+            
+            // 显示加载提示
+            showLoading();
+
+            try {
+                // 使用 fetch 调用导出接口
+                const response = await fetch(`/api/attendance/export?date=${encodeURIComponent(dateFilter)}&status=${encodeURIComponent(statusQuery)}&dormitory=${encodeURIComponent(dormitoryFilter)}`);
+                if (!response.ok) {
+                    throw new Error('导出失败');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    // 导出成功，提示用户文件已保存
+                    alert(result.message); // 提示用户文件已保存
+                } else {
+                    // 导出失败，显示错误信息
+                    showError(result.error || '导出失败，请重试');
+                }
+            } catch (error) {
+                console.error('导出记录失败:', error);
+                showError('导出记录失败，请重试');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function generateWord() {
+            fetch('/api/generate-word', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({}) // 如果需要传递参数，可以在这里添加
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message); // 提示用户文件生成成功
+                } else {
+                    alert(data.message); // 提示用户生成失败的原因
+                }
+            })
+            .catch(error => {
+                console.error('生成 Word 文件失败:', error);
+                alert('生成 Word 文件失败，请稍后再试');
+            });
+        }
+        
+
+    </script>
+</body>
+</html>
