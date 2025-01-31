@@ -6,9 +6,9 @@ This project is licensed under the Mozilla Public License 2.0.
 本项目遵循 Mozilla 公共许可证 2.0 版本（MPL 2.0）。  
 请注意，英文版本是唯一具有法律效力的版本，中文翻译仅用于帮助理解其内容。您可以通过 [http://mozilla.org/MPL/2.0/](http://mozilla.org/MPL/2.0/) 获取正式英文版本。
 
-# 目前稳定版:v1.5.0
+# 目前稳定版:v1.6
 
-# 预开发版v1.5.1(整体美化)
+# 预开发版暂无
 
 # 晚寝签到系统
 
@@ -34,10 +34,10 @@ This project is licensed under the Mozilla Public License 2.0.
         2.在历史记录中导入教师列
         3.获取记录
         
-# No.8选择寝室逻辑菜单，美化
+#No.8选择寝室逻辑菜单，美化（√）
         
 #No.9用py实现word文件导出（√）
 1.配置模板
 2.调试修改
 
-# No.10 在网页前端尝试集成按钮 一键生成word文档（√）
+#No.10 在网页前端尝试集成按钮 一键生成word文档（√）
