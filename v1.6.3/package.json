@@ -1,0 +1,13 @@
+{
+    "name": "attendance-system",
+    "version": "1.0.0",
+    "description": "Dormitory Attendance System",
+    "main": "server-lite.js",
+    "scripts": {
+        "start": "node server-lite.js"
+    },
+    "dependencies": {
+        "express": "^4.21.2",
+        "sqlite3": "^5.1.6"
+    }
+}
